@@ -8,10 +8,21 @@ from .model import (
     ChebyshevSpectralConv
 )
 
+from .components import (
+    SpectralRegularizedLoss,
+    UncertaintyWeightedLoss,
+    CurriculumWeightedLoss,
+    CombinedLoss
+)
+
 __all__ = [
     "SpectralTemporalNet",
     "SpectralFilterBank",
     "MessagePassingEncoder",
     "DualViewFusionModule",
-    "ChebyshevSpectralConv"
+    "ChebyshevSpectralConv",
+    "SpectralRegularizedLoss",
+    "UncertaintyWeightedLoss",
+    "CurriculumWeightedLoss",
+    "CombinedLoss"
 ]
