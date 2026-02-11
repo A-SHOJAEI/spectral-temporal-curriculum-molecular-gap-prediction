@@ -1,0 +1,131 @@
+# Ablation Study Configuration
+# This configuration disables spectral filters to test their contribution
+# Baseline: Message-passing only (no spectral view)
+
+# Global settings
+seed: 42
+device: gpu
+num_gpus: 1
+strategy: auto
+
+# Model architecture configuration
+# ABLATION: Reduced spectral filters to test their importance
+model:
+  node_features: 128
+  edge_features: 64
+  hidden_dim: 256
+  mp_layers: 4
+  num_spectral_filters: 1  # ABLATION: Reduced from 6 to 1 (minimal spectral component)
+  max_chebyshev_order: 5   # ABLATION: Reduced from 20 to 5 (lower-order approximation)
+  fusion_type: concat      # ABLATION: Changed from cross_attention to simple concat
+  dropout: 0.1
+  pooling: mean            # ABLATION: Changed from attention to mean pooling
+  output_dim: 1
+
+# Optimizer configuration
+optimizer:
+  name: adamw
+  lr: 0.001
+  weight_decay: 0.01
+  betas: [0.9, 0.999]
+  momentum: 0.9
+
+# Learning rate scheduler configuration
+scheduler:
+  name: cosine
+  T_max: 100
+  eta_min: 1.0e-06
+  gamma: 0.95
+  factor: 0.5
+  patience: 10
+  total_steps: 10000
+
+# Curriculum learning configuration
+# ABLATION: Disabled curriculum learning to isolate spectral component impact
+curriculum:
+  initial_fraction: 1.0     # ABLATION: Start with all samples (no curriculum)
+  final_fraction: 1.0       # ABLATION: Use all samples throughout
+  warmup_epochs: 0          # ABLATION: No warmup
+  total_epochs: 100
+  growth_strategy: linear
+  min_growth_rate: 0.05
+
+# Loss function configuration
+loss:
+  base_loss: mae
+  uncertainty_weight: 0.1
+  spectral_regularization: 0.0  # ABLATION: Disabled spectral regularization
+  curriculum_weight: 0.0        # ABLATION: Disabled curriculum weighting
+
+# Evaluation metrics configuration
+evaluation:
+  target_mae_ev: 0.082
+  convergence_window: 10
+  tail_percentile: 95.0
+  compute_correlations: true
+  track_convergence: true
+
+# Data loading configuration
+data:
+  data_dir: data
+  batch_size: 64
+  num_workers: 4
+  pin_memory: true
+  subset: true
+  curriculum_strategy: spectral_complexity
+  max_samples: 50000
+  node_feature_dim: 128
+  edge_feature_dim: 64
+  cache_spectral_features: false  # ABLATION: Disabled spectral feature caching
+
+# Training configuration
+training:
+  max_epochs: 100
+  early_stopping_patience: 15
+  early_stopping_min_delta: 0.0001
+  gradient_clip_val: 1.0
+  accumulate_grad_batches: 1
+  precision: '32'
+  deterministic: true
+  benchmark: false
+
+# Logging and checkpointing configuration
+logging:
+  log_every_n_steps: 50
+  save_top_k: 3
+  monitor: val/mae
+  mode: min
+  save_last: true
+  dirpath: checkpoints
+  filename: ablation-{epoch:02d}-{val/mae:.4f}
+  auto_insert_metric_name: false
+
+# Experiment tracking configuration
+experiment:
+  name: ablation-no-spectral
+  project: molecular-gap-prediction
+  tags:
+    - ablation
+    - baseline
+    - message-passing-only
+  log_model: true
+  log_artifacts: true
+  tracking_uri: mlruns
+
+# Target performance metrics
+targets:
+  MAE_eV: 0.082
+  convergence_speedup_vs_baseline: 1.0  # Expect no speedup in ablation
+  tail_percentile_95_MAE: 0.14
+
+# ABLATION NOTES:
+# This configuration tests the contribution of the spectral components by:
+# 1. Reducing spectral filters from 6 to 1
+# 2. Reducing Chebyshev order from 20 to 5
+# 3. Disabling cross-attention fusion (using simple concatenation)
+# 4. Disabling attention-based pooling (using mean pooling)
+# 5. Disabling curriculum learning
+# 6. Disabling spectral regularization
+#
+# Expected outcome: Higher MAE and slower convergence compared to default config,
+# demonstrating the importance of the spectral-temporal components.
